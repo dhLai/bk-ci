@@ -69,7 +69,7 @@ object Runner {
             LoggerService.executeCount = retryCount.toInt() + 1
             LoggerService.jobId = buildVariables.containerHashId
 
-            Heartbeat.start()
+            Heartbeat.start(buildVariables.timeoutMills) // #2043 添加Job超时监控
             // 开始轮询
             try {
                 LoggerService.elementId = VMUtils.genStartVMTaskId(buildVariables.containerId)
@@ -116,7 +116,9 @@ object Runner {
                                     containerId = buildVariables.containerHashId,
                                     isSuccess = true,
                                     buildResult = env,
-                                    type = buildTask.type
+                                    type = buildTask.type,
+                                    errorCode = 0,
+                                    monitorData = taskDaemon.getMonitorData()
                                 )
                                 logger.info("Finish completing the task ($buildTask)")
                             } catch (e: Throwable) {
@@ -163,7 +165,8 @@ object Runner {
                                     type = buildTask.type,
                                     message = CommonUtils.interceptStringInLength(message, PIPELINE_MESSAGE_STRING_LENGTH_MAX),
                                     errorType = errorType,
-                                    errorCode = errorCode
+                                    errorCode = errorCode,
+                                    monitorData = taskDaemon.getMonitorData()
                                 )
                             } finally {
                                 LoggerService.finishTask()
@@ -180,7 +183,7 @@ object Runner {
                 }
             } catch (e: Exception) {
                 logger.error("Other unknown error has occurred:", e)
-                LoggerService.addNormalLine(Ansi().fgRed().a("Other unknown error has occurred: " + e.message).reset().toString())
+                LoggerService.addRedLine("Other unknown error has occurred: " + e.message)
             } finally {
                 LoggerService.stop()
                 Heartbeat.stop()
@@ -229,7 +232,7 @@ object Runner {
     private fun showMachineLog(vmName: String) {
         LoggerService.addNormalLine("")
         LoggerService.addFoldStartLine("[Machine Environment Properties]")
-        System.getProperties().forEach { k, v ->
+        System.getProperties().toMap().forEach { (k, v) ->
             LoggerService.addNormalLine("$k: $v")
             logger.info("$k: $v")
         }

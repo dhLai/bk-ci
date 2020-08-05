@@ -50,6 +50,8 @@ const val SUCCESS = "success" // 成功
 const val UNDO = "undo" // 未执行
 const val DOING = "doing" // 执行中
 const val FAIL = "fail" // 失败
+const val ONLINE = "online" // 上线
+const val TEST_ENV_PREPARE = "testEnvPrepare" // 准备测试环境
 const val ING = "ing" // 中
 const val LATEST = "latest" // 最新
 const val DEVELOP = "develop" // 开发
@@ -66,3 +68,7 @@ const val NODEJS = "nodejs" // nodejs
 const val GOLANG = "golang" // golang
 const val PATTERN_STYLE = "patternStyle" // 正则表达式规则
 const val MESSAGE = "message" // 提示信息
+
+const val KEY_START_TIME = "startTime"
+const val KEY_END_TIME = "endTime"
+const val KEY_CHANNEL = "channel"

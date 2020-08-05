@@ -27,6 +27,8 @@
 package com.tencent.devops.process.api.builds
 
 import com.tencent.devops.common.api.auth.AUTH_HEADER_DEVOPS_BUILD_ID
+import com.tencent.devops.common.api.auth.AUTH_HEADER_DEVOPS_PIPELINE_ID
+import com.tencent.devops.common.api.auth.AUTH_HEADER_DEVOPS_PROJECT_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_DEVOPS_VM_NAME
 import com.tencent.devops.common.api.auth.AUTH_HEADER_DEVOPS_VM_SEQ_ID
 import com.tencent.devops.common.api.pojo.Result
@@ -117,6 +119,24 @@ interface BuildBuildResource {
         vmName: String
     ): Result<Boolean>
 
+    @ApiOperation("timeout & end the seq build")
+    @POST
+    @Path("/timeout")
+    fun timeoutTheBuild(
+        @ApiParam("projectId", required = true)
+        @HeaderParam(AUTH_HEADER_DEVOPS_PROJECT_ID)
+        projectId: String,
+        @ApiParam("pipelineId", required = true)
+        @HeaderParam(AUTH_HEADER_DEVOPS_PIPELINE_ID)
+        pipelineId: String,
+        @ApiParam(value = "构建ID", required = true)
+        @HeaderParam(AUTH_HEADER_DEVOPS_BUILD_ID)
+        buildId: String,
+        @ApiParam(value = "构建环境ID", required = true)
+        @HeaderParam(AUTH_HEADER_DEVOPS_VM_SEQ_ID)
+        vmSeqId: String
+    ): Result<Boolean>
+
     @ApiOperation("Heartbeat")
     @POST
     @Path("/heartbeat")
@@ -190,7 +210,7 @@ interface BuildBuildResource {
     @Path("/taskIds/{taskId}/subVar")
     fun getSubBuildVars(
         @ApiParam("构建ID", required = true)
-        @HeaderParam("buildId")
+        @HeaderParam(AUTH_HEADER_DEVOPS_BUILD_ID)
         buildId: String,
         @ApiParam("任务ID", required = false)
         @PathParam("taskId")
