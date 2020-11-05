@@ -52,6 +52,7 @@ import com.tencent.devops.process.pojo.pipeline.ModelDetail
 import com.tencent.devops.process.utils.PipelineVarUtil
 import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateInElement
 import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateOutElement
+import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.pojo.PipelineBuildStageControlOption
 import com.tencent.devops.process.service.BuildVariableService
 import org.jooq.DSLContext
@@ -73,7 +74,8 @@ class PipelineBuildDetailService @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val webSocketDispatcher: WebSocketDispatcher,
     private val pipelineWebsocketService: PipelineWebsocketService,
-    private val pipelineBuildDao: PipelineBuildDao
+    private val pipelineBuildDao: PipelineBuildDao,
+    private val pipelineBuildSummaryDao: PipelineBuildSummaryDao
 ) {
 
     companion object {
@@ -114,6 +116,11 @@ class PipelineBuildDetailService @Autowired constructor(
         }
 
         val triggerContainer = model.stages[0].containers[0] as TriggerContainer
+        val buildNo = triggerContainer.buildNo
+        if (buildNo != null) {
+            buildNo.buildNo = pipelineBuildSummaryDao.get(dslContext, buildInfo.pipelineId)?.buildNo
+                ?: buildNo.buildNo
+        }
         val params = triggerContainer.params
         val newParams = mutableListOf<BuildFormProperty>()
         params.forEach {
@@ -704,7 +711,12 @@ class PipelineBuildDetailService @Autowired constructor(
         }, BuildStatus.STAGE_SUCCESS)
     }
 
-    fun stageStart(pipelineId: String, buildId: String, stageId: String) {
+    fun stageStart(
+        pipelineId: String,
+        buildId: String,
+        stageId: String,
+        controlOption: PipelineBuildStageControlOption
+    ) {
         logger.info("[$buildId]|stage_start|stageId=$stageId")
         update(buildId, object : ModelInterface {
             var update = false
@@ -714,6 +726,7 @@ class PipelineBuildDetailService @Autowired constructor(
                     update = true
                     stage.status = BuildStatus.QUEUE.name
                     stage.reviewStatus = BuildStatus.REVIEW_PROCESSED.name
+                    stage.stageControlOption?.triggered = controlOption.stageControlOption.triggered
                     pipelineBuildDao.updateStatus(dslContext, buildId, BuildStatus.STAGE_SUCCESS, BuildStatus.RUNNING)
                     pipelineStageService.updatePipelineRunningCount(pipelineId, buildId, 1)
                     updateHistoryStage(buildId, model)
