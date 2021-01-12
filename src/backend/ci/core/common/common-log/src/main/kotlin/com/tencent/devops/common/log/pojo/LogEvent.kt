@@ -24,37 +24,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.dispatch.docker.service
+package com.tencent.devops.common.log.pojo
 
-import com.tencent.devops.dispatch.docker.common.ErrorCodeEnum
-import com.tencent.devops.dispatch.docker.dao.PipelineDockerIPInfoDao
-import com.tencent.devops.dispatch.docker.exception.DockerServiceException
-import okhttp3.Request
-import org.jooq.DSLContext
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
+import com.tencent.devops.common.event.annotation.Event
+import com.tencent.devops.common.event.dispatcher.pipeline.mq.MQ
+import com.tencent.devops.common.log.pojo.message.LogMessage
 
-@Service
-class DockerHostProxyServiceImpl @Autowired constructor(
-    private val pipelineDockerIPInfoDao: PipelineDockerIPInfoDao,
-    private val dslContext: DSLContext
-) : DockerHostProxyService {
-
-    override fun getDockerHostProxyRequest(
-        dockerHostUri: String,
-        dockerHostIp: String,
-        dockerHostPort: Int
-    ): Request.Builder {
-        val url = if (dockerHostPort == 0) {
-            val dockerIpInfo = pipelineDockerIPInfoDao.getDockerIpInfo(dslContext, dockerHostIp) ?: throw DockerServiceException(
-                ErrorCodeEnum.DOCKER_IP_NOT_AVAILABLE.errorType, ErrorCodeEnum.DOCKER_IP_NOT_AVAILABLE.errorCode, "Docker IP: $dockerHostIp is not available.")
-            "http://$dockerHostIp:${dockerIpInfo.dockerHostPort}$dockerHostUri"
-        } else {
-            "http://$dockerHostIp:$dockerHostPort$dockerHostUri"
-        }
-
-        return Request.Builder().url(url)
-            .addHeader("Accept", "application/json; charset=utf-8")
-            .addHeader("Content-Type", "application/json; charset=utf-8")
-    }
-}
+@Event(MQ.EXCHANGE_LOG_BUILD_EVENT, MQ.ROUTE_LOG_BUILD_EVENT)
+data class LogEvent(
+    override val buildId: String,
+    val logs: List<LogMessage>,
+    override val retryTime: Int = 2,
+    override val delayMills: Int = 0
+) : ILogEvent(buildId, retryTime, delayMills)

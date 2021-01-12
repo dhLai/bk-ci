@@ -24,14 +24,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.dispatch.docker.service
+package com.tencent.devops.common.log.pojo
 
-import okhttp3.Request
+import com.tencent.devops.common.event.annotation.Event
+import com.tencent.devops.common.event.dispatcher.pipeline.mq.MQ
+import com.tencent.devops.common.log.pojo.message.LogMessageWithLineNo
 
-interface DockerHostProxyService {
-    fun getDockerHostProxyRequest(
-        dockerHostUri: String,
-        dockerHostIp: String,
-        dockerHostPort: Int = 0
-    ): Request.Builder
-}
+@Event(MQ.EXCHANGE_LOG_BATCH_BUILD_EVENT, MQ.ROUTE_LOG_BATCH_BUILD_EVENT)
+data class LogBatchEvent(
+    override val buildId: String,
+    val logs: List<LogMessageWithLineNo>,
+    override val retryTime: Int = 2,
+    override val delayMills: Int = 0
+) : ILogEvent(buildId, retryTime, delayMills)
